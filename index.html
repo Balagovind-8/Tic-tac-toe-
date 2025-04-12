@@ -14,9 +14,8 @@
     }
   </script>
   <script type="text/babel" data-type="module">
-    import React, { StrictMode } from 'react';
+    import React, { StrictMode, useState, useEffect } from 'react';
     import { createRoot } from 'react-dom/client';
-    import { useState } from 'react';
 
     function Square({ value, onSquareClick }) {
       return (
@@ -44,6 +43,8 @@
       let status;
       if (winner) {
         status = 'Winner: ' + winner;
+      } else if (!squares.includes(null)) {
+        status = 'It\'s a Draw!';
       } else {
         status = 'Next player: ' + (xIsNext ? 'X' : 'O');
       }
@@ -73,8 +74,21 @@
     let App = function Game() {
       const [history, setHistory] = useState([Array(9).fill(null)]);
       const [currentMove, setCurrentMove] = useState(0);
+      const [restartTimer, setRestartTimer] = useState(null);
+      const [isCancelled, setIsCancelled] = useState(false);
       const xIsNext = currentMove % 2 === 0;
       const currentSquares = history[currentMove];
+
+      useEffect(() => {
+        const winner = calculateWinner(currentSquares);
+        if ((winner || !currentSquares.includes(null)) && !isCancelled) {
+          const timer = setTimeout(() => {
+            resetGame();
+          }, 5000); // 5-second restart timer
+          setRestartTimer(timer);
+        }
+        return () => clearTimeout(restartTimer);
+      }, [currentSquares, isCancelled]);
 
       function handlePlay(nextSquares) {
         const nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
@@ -84,6 +98,16 @@
 
       function jumpTo(nextMove) {
         setCurrentMove(nextMove);
+      }
+
+      function resetGame() {
+        setHistory([Array(9).fill(null)]);
+        setCurrentMove(0);
+      }
+
+      function cancelRestart() {
+        setIsCancelled(true);
+        clearTimeout(restartTimer);
       }
 
       const moves = history.map((squares, move) => {
@@ -107,6 +131,16 @@
           </div>
           <div className="game-info">
             <ol>{moves}</ol>
+            <button className="restart" onClick={resetGame}>
+              Restart Game
+            </button>
+            {isCancelled ? (
+              <div>Restart Cancelled!</div>
+            ) : (
+              <button className="cancel" onClick={cancelRestart}>
+                Cancel Restart
+              </button>
+            )}
           </div>
         </div>
       );
@@ -139,6 +173,7 @@
       </StrictMode>
     );
   </script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -146,7 +181,7 @@
 
     body {
       font-family: 'Arial', sans-serif;
-      background-color: #f5f5f5;
+      background-color: navy;
       margin: 0;
       padding: 20px;
       display: flex;
@@ -223,7 +258,7 @@
       padding: 10px;
       border-radius: 5px;
       cursor: pointer;
-      margin-top: 5px;
+      margin-top: 10px;
       transition: background-color 0.3s;
     }
 
@@ -234,5 +269,22 @@
     .game-info button:focus {
       outline: none;
     }
+
+    .restart {
+      background-color: #28a745;
+    }
+
+    .restart:hover {
+      background-color: #218838;
+    }
+
+    .cancel {
+      background-color: #dc3545;
+    }
+
+    .cancel:hover {
+      background-color: #c82333;
+    }
+
   </style>
 </html>
